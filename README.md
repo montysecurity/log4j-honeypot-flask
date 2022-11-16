@@ -8,7 +8,7 @@ Here is a list of changes made compared to the repo managed by BinaryDefense.
 - Removed docker functionality
 - Added local logging functionality
 - Changed defalt port to 80
-- Created `setup.sh` to instal dependencies and launch the app
+- Created `setup.sh` to install dependencies and launch the app
 - Removed *requests* from `requirements.txt`
 
 ## Why the Changes?
