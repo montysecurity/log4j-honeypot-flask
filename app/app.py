@@ -1,14 +1,6 @@
 from flask import Flask, redirect, url_for, request
-import requests, urllib.request
 import json
 import os
-
-#### Set your Slack or Teams or Mattermost webhook here, or in environment variable WEBHOOK_URL ####
-webhook_url = ""
-# For help setting up the webhook, see:
-# Slack: https://api.slack.com/messaging/webhooks
-# Teams: https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
-# Mattermost: https://docs.mattermost.com/developer/webhooks-incoming.html
 
 #### Set the name of this honeypot instance here, or in environment variable HONEYPOT_NAME ####
 # (use a descriptive name so you know when alerts come in where they were triggered)
@@ -16,21 +8,18 @@ honeypot_name = "My log4j honeypot"
 
 #### Set the port you want this honeypot to listen on. Recommend 8080 or 80
 #### you can also use environment variable HONEYPOT_PORT
-honeypot_port = 8080
+honeypot_port = 80
 
 if "HONEYPOT_NAME" in os.environ and os.environ["HONEYPOT_NAME"].strip() != "":
     honeypot_name = os.environ["HONEYPOT_NAME"]
-
-if "WEBHOOK_URL" in os.environ and os.environ["WEBHOOK_URL"].strip() != "":
-    webhook_url = os.environ["WEBHOOK_URL"].strip()
 
 if "HONEYPOT_PORT" in os.environ and os.environ["HONEYPOT_PORT"].strip() != "":
     try:
         honeypot_port = int(os.environ["HONEYPOT_PORT"].strip())
     except:
         print("Invalid port: " + os.environ["HONEYPOT_PORT"])
-        print("Reverting to port 8080 default")
-        honeypot_port = 8080
+        print("Reverting to port 80 default")
+        honeypot_port = 80
 
 app = Flask(__name__)
 
@@ -45,15 +34,13 @@ def reportHit(request):
     for fieldname, value in request.form.items():
         msglines.append(str((fieldname, value)))
     msglines.append("```")
-
+    # Convert to JSON and write to log file instead of sending web request
     msg = {'text':'\n '.join(msglines)}
-    response = requests.post(
-        webhook_url, data=json.dumps(msg),
-        headers={'Content-Type': 'application/json'},
-        proxies=urllib.request.getproxies(),
-    )
-    if response.status_code != 200:
-        print('Request to webhook returned an error %s, the response is:\n%s' % (response.status_code, response.text))
+    msg = json.dumps(msg)
+    log = open("log.txt", "a")
+    log.write(msg)
+    log.write("\n--------------------------------------------------\n")
+    log.close()
 
 login_form = """<html>
 <head><title>Secure Area Login</title></head>
@@ -85,8 +72,4 @@ def homepage(hostname="NA"):
 
 
 if __name__ == '__main__':
-    if not webhook_url:
-        print("ERROR: WEBHOOK_URL environment variable not set! I will not be able to report exploit attempts!")
-        print("For Docker, use -e WEBHOOK_URL=xxxxx or for shell use export WEBHOOK_URL=xxxxx")
-    else:
-        app.run(debug=False, host='0.0.0.0', port=honeypot_port)
+    app.run(debug=False, host='0.0.0.0', port=honeypot_port)
