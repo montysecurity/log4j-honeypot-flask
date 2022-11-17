@@ -24,22 +24,15 @@ if "HONEYPOT_PORT" in os.environ and os.environ["HONEYPOT_PORT"].strip() != "":
 app = Flask(__name__)
 
 def reportHit(request):
-    msglines = []
-    msglines.append("Alert from log4j honeypot " + honeypot_name)
-    msglines.append("Suspicious request received from IP: "+ request.remote_addr)
-    msglines.append("Review HTTP headers for payloads:")
-    msglines.append("```")
-    for header in request.headers:
-        msglines.append(str(header))
-    for fieldname, value in request.form.items():
-        msglines.append(str((fieldname, value)))
-    msglines.append("```")
-    # Convert to JSON and write to log file instead of sending web request
-    msg = {'text':'\n '.join(msglines)}
-    msg = json.dumps(msg)
     log = open("log.txt", "a")
-    log.write(msg)
-    log.write("\n--------------------------------------------------\n")
+    log.write("Alert from log4j honeypot " + honeypot_name + "\n")
+    log.write("Suspicious request received from IP: "+ request.remote_addr + "\n")
+    log.write("Review HTTP headers for payloads:\n")
+    for header in request.headers:
+        log.write(str(header) + "\n")
+    for fieldname, value in request.form.items():
+        log.write(str((fieldname, value)) + "\n")
+    log.write("\n----------------------------------------\n")
     log.close()
 
 login_form = """<html>
