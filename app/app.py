@@ -1,14 +1,14 @@
 from flask import Flask, redirect, url_for, request
-import json
-import os
+from discord_webhook import DiscordWebhook
+import json, os, requests
 
-#### Set the name of this honeypot instance here, or in environment variable HONEYPOT_NAME ####
-# (use a descriptive name so you know when alerts come in where they were triggered)
 honeypot_name = "My log4j honeypot"
-
-#### Set the port you want this honeypot to listen on. Recommend 8080 or 80
-#### you can also use environment variable HONEYPOT_PORT
 honeypot_port = 80
+global discord_webhook
+discord_webhook = ""
+
+if "LOG4J_WEBHOOK" in os.environ and os.environ["LOG4J_WEBHOOK"].strip() != "":
+    discord_webhook = os.environ["LOG4J_WEBHOOK"]
 
 if "HONEYPOT_NAME" in os.environ and os.environ["HONEYPOT_NAME"].strip() != "":
     honeypot_name = os.environ["HONEYPOT_NAME"]
@@ -24,16 +24,20 @@ if "HONEYPOT_PORT" in os.environ and os.environ["HONEYPOT_PORT"].strip() != "":
 app = Flask(__name__)
 
 def reportHit(request):
-    log = open("log.txt", "a")
-    log.write("Alert from log4j honeypot " + honeypot_name + "\n")
-    log.write("Suspicious request received from IP: "+ request.remote_addr + "\n")
-    log.write("Review HTTP headers for payloads:\n")
+    msg = ""
+    msg += str("Log4J Honeypot Alert\n")
+    msg += str("- Source IP: " + request.remote_addr + "\n")
+    msg += str("- Headers:\n")
     for header in request.headers:
-        log.write(str(header) + "\n")
+        msg += str("-- " + str(header) + "\n")
     for fieldname, value in request.form.items():
-        log.write(str((fieldname, value)) + "\n")
-    log.write("\n----------------------------------------\n")
+        msg += str("-- " + str((fieldname, value)) + "\n")
+    log = open("log.txt", "a")
+    log.write(msg)
     log.close()
+    if "https" in discord_webhook:
+        webhook = DiscordWebhook(url=discord_webhook, content=msg)
+        response = webhook.execute()
 
 login_form = """<html>
 <head><title>Secure Area Login</title></head>
@@ -50,13 +54,11 @@ login_form = """<html>
 @app.route("/", methods=['POST','GET','HEAD','PUT','DELETE'])
 def homepage(hostname="NA"):
     for header in request.headers:
-        print(header)
         for field in header:
             if "${" in field:
                 reportHit(request)
     if request.method == 'POST':
         for fieldname, value in request.form.items():
-            print(value)
             if "${" in value:
                 reportHit(request)
         return("<html><head><title>Login Failed</title></head><body><h1>Login Failed</h1><br/><a href='/'>Try again</a></body></html>")

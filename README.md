@@ -4,16 +4,12 @@
 
 Here is a list of changes made compared to the repo managed by BinaryDefense.
 
-- Removed webhook functionality
 - Removed docker functionality
 - Added local logging functionality
 - Changed defalt port to 80
 - Created `setup.sh` to install dependencies and launch the app
-- Removed *requests* from `requirements.txt`
-
-## Why the Changes?
-
-I wanted to make a version that could be stood up with one command and not require Slack/Teams as a notification platform
+- Added Discord webhook functionality, removed Slack/Teams
+- Re-formatted the alerting
 
 ## Setup
 
